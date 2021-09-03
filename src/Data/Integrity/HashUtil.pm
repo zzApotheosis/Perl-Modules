@@ -2,7 +2,7 @@
 package HashUtil;
 
 # Class information
-our $VERSION = "0.0.1-20210825";
+our $VERSION = "0.0.1-20210903";
 
 # Constants
 use constant DEFAULT_ALGO => 'sha256';
@@ -77,6 +77,42 @@ sub new {
 
 #
 # walk(algo => $algo, basedir => $basedir)
+#
+# This subroutine will walk a target directory and its subdirectories and add each file found
+# to this object's file list array.
+#
+# Args:
+#   $algo • The SHA algorithm to use
+#   $basedir • The target directory to walk
+#
+sub walk {
+    # Define subroutine variables
+    my $self = shift(@_);
+    my %args;
+    my $find_func;
+    my %find_opts;
+
+    # Fetch arguments
+    %args = @_;
+    $args{algo} = $self->get_algo() if !defined($args{algo});
+    $args{basedir} = getcwd() if !defined($args{basedir});
+
+    # Define a subroutine for the find() function to use
+    $find_func = sub {
+        # Skip if it's a directory
+        return if (-d $_);
+        
+        # Add this file to the file list array
+        $self->add_file($File::Find::name);
+    };
+
+    # Walk the basedir
+    %find_opts = (wanted => $find_func);
+    find(\%find_opts, $args{basedir});
+}
+
+#
+# hash_walk(algo => $algo, basedir => $basedir)
 #
 # This subroutine will walk a target directory and its subdirectories and create a JSON-encoded
 # digest list of every file in the target directory and its subdirectories.
