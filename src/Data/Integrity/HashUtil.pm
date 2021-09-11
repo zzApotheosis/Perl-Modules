@@ -2,7 +2,7 @@
 package HashUtil;
 
 # Class information
-our $VERSION = "0.0.1-20210903";
+our $VERSION = "0.0.2-20210911";
 
 # Constants
 use constant DEFAULT_ALGO => 'sha256';
@@ -18,9 +18,17 @@ use JSON;
 use File::Find;
 use Term::ANSIColor;
 use IO::File;
+use Config;
 
 # Static fields
 my $default_algo = HashUtil::DEFAULT_ALGO;
+
+# Set colors per OS
+use constant COLOR_RED    => ($Config{osname} ne "MSWin32") ? color('red') : '';
+use constant COLOR_BLUE   => ($Config{osname} ne "MSWin32") ? color('blue') : '';
+use constant COLOR_YELLOW => ($Config{osname} ne "MSWin32") ? color('yellow') : '';
+use constant COLOR_GREEN  => ($Config{osname} ne "MSWin32") ? color('green') : '';
+use constant COLOR_RESET  => ($Config{osname} ne "MSWin32") ? color('reset') : '';
 
 #
 # set_default_algo()
@@ -84,6 +92,7 @@ sub new {
 # Args:
 #   $algo • The SHA algorithm to use
 #   $basedir • The target directory to walk
+#   $verbose • Whether or not to print the current operation to stdout
 #
 sub walk {
     # Define subroutine variables
@@ -96,13 +105,18 @@ sub walk {
     %args = @_;
     $args{algo} = $self->get_algo() if !defined($args{algo});
     $args{basedir} = getcwd() if !defined($args{basedir});
+    $args{verbose} = 0 if !defined($args{verbose});
 
     # Define a subroutine for the find() function to use
     $find_func = sub {
         # Skip if it's a directory
-        return if (-d $_);
+        if (-d $_) {
+            STDOUT->printflush("Skipping directory $_\n") if $args{verbose};
+            return;
+        }
         
         # Add this file to the file list array
+        STDOUT->printflush("Adding file " . $File::Find::name . "\n") if $args{verbose};
         $self->add_file($File::Find::name);
     };
 
@@ -120,6 +134,7 @@ sub walk {
 # Args:
 #   $algo • The SHA algorithm to use
 #   $basedir • The target directory to walk
+#   $verbose • Whether or not to print the current operation to stdout
 #
 sub hash_walk {
     # Define subroutine variables
@@ -137,6 +152,7 @@ sub hash_walk {
     %args = @_;
     $args{algo} = $self->get_algo() if !defined($args{algo});
     $args{basedir} = getcwd() if !defined($args{basedir});
+    $args{verbose} = 0 if !defined($args{verbose});
     
     # Define a subroutine for the find() function to use
     $find_func = sub {
@@ -146,7 +162,10 @@ sub hash_walk {
         my $fh = IO::File->new();
         
         # Skip if it's a directory
-        return if (-d $_);
+        if (-d $_) {
+            STDOUT->printflush("Skipping directory $_\n") if $args{verbose};
+            return;
+        }
         
         # Open the file for reading
         if ($fh->open("$File::Find::name", 'r')) {
@@ -154,10 +173,11 @@ sub hash_walk {
             $sha = Digest::SHA->new($args{algo});
             
             # Compute the digest of the given file
+            STDOUT->printflush("Calculating " . $args{algo} . " digest for " . $File::Find::name . "...\n") if $args{verbose};
             $sha->addfile($fh);
             $digest = $sha->hexdigest();
             $digests{$File::Find::name} = $digest;
-
+            
             # Close filehandle
             $fh->close();
         } else {
@@ -329,6 +349,7 @@ sub add_file {
 #
 # Args:
 #   $algo • The SHA algorithm to use. If not specified, defaults to the object's current recorded algorithm
+#   $verbose • Whether or not to print the current operation to stdout
 #
 sub digest {
     # Define subroutine variables
@@ -342,6 +363,7 @@ sub digest {
     # Fetch arguments
     %args = @_;
     $args{algo} = $self->get_algo() if !defined($args{algo});
+    $args{verbose} = 0 if !defined($args{verbose});
     
     # Check if the selected algorithm is defined
     if (!defined($args{algo})) {
@@ -350,6 +372,7 @@ sub digest {
     
     # Loop through all current files
     for (my $i = 0; $i < scalar(@{$self->get_file_list_ref()}); $i++) {
+        STDOUT->printflush("Processing file " . ${$self->get_file_list_ref()}[$i] . "\n") if $args{verbose};
         $sha = Digest::SHA->new($args{algo});
         if ($sha->addfile(${$self->get_file_list_ref()}[$i])) {
             $digests{${$self->get_file_list_ref()}[$i]} = $sha->hexdigest();
@@ -442,9 +465,9 @@ sub verify {
     # Loop through all digests and compare them
     STDOUT->printflush("********** Verifying Data Integrity ***********\n");
     for (my $i = 0; $i < scalar(@file_list); $i++) {
-        STDOUT->printflush("* " . color('blue') . "$file_list[$i]" . color('reset') . " ... ");
+        STDOUT->printflush("* " . COLOR_BLUE . "$file_list[$i]" . COLOR_RESET . " ... ");
         if (! -e $file_list[$i]) {
-            STDOUT->printflush(color('yellow') . "Missing\n" . color('reset'));
+            STDOUT->printflush(COLOR_YELLOW . "Missing\n" . COLOR_RESET);
             push(@missing_files, $file_list[$i]);
             next;
         }
@@ -453,15 +476,15 @@ sub verify {
             $sha->addfile($fh);
             $computed_digest = $sha->hexdigest();
             if ($computed_digest eq $digests{$file_list[$i]}) {
-                STDOUT->printflush(color('green') . "Verified\n" . color('reset'));
+                STDOUT->printflush(COLOR_GREEN . "Verified\n" . COLOR_RESET);
                 push(@verified_files, $file_list[$i]);
             } else {
-                STDOUT->printflush(color('red') . "Mismatch\n" . color('reset'));
+                STDOUT->printflush(COLOR_RED . "Mismatch\n" . COLOR_RESET);
                 push(@mismatch_list, $file_list[$i]);
             }
             $fh->close();
         } else {
-            STDOUT->printflush(color('red') . "$!\n" . color('reset'));
+            STDOUT->printflush(COLOR_RED . "$!\n" . COLOR_RESET);
             push(@fh_errors, $file_list[$i]);
         }
     }
@@ -473,21 +496,21 @@ sub verify {
     
     # Print results
     STDOUT->printflush("***** Data Integrity Verification Results *****\n");
-    STDOUT->printflush("* Base directory: " . color('blue') . $args{basedir} . "\n" . color('reset'));
-    STDOUT->printflush("* Cryptographic hash function: " . color('blue') . $algo . "\n" . color('reset'));
-    STDOUT->printflush("* Total files processed: " . color('blue') . scalar(@file_list) . color('reset') . "\n");
-    STDOUT->printflush("* Files successfully verified: " . color('green') . scalar(@verified_files) . "\n" . color('reset'));
-    STDOUT->printflush("* Missing files: " . (scalar(@missing_files) ? color('yellow') : color('green')) . scalar(@missing_files) . "\n" . color('reset'));
+    STDOUT->printflush("* Base directory: " . COLOR_BLUE . $args{basedir} . "\n" . COLOR_RESET);
+    STDOUT->printflush("* Cryptographic hash function: " . COLOR_BLUE . $algo . "\n" . COLOR_RESET);
+    STDOUT->printflush("* Total files processed: " . COLOR_BLUE . scalar(@file_list) . COLOR_RESET . "\n");
+    STDOUT->printflush("* Files successfully verified: " . COLOR_GREEN . scalar(@verified_files) . "\n" . COLOR_RESET);
+    STDOUT->printflush("* Missing files: " . (scalar(@missing_files) ? COLOR_YELLOW : COLOR_GREEN) . scalar(@missing_files) . "\n" . COLOR_RESET);
     foreach (@missing_files) {
-        STDOUT->printflush("* " . color('yellow') . "$_\n" . color('reset'));
+        STDOUT->printflush("* " . COLOR_YELLOW . "$_\n" . COLOR_RESET);
     }
-    STDOUT->printflush("* Files with mismatches: " . (scalar(@mismatch_list) ? color('red') : color('green')) . scalar(@mismatch_list) . "\n" . color('reset'));
+    STDOUT->printflush("* Files with mismatches: " . (scalar(@mismatch_list) ? COLOR_RED : COLOR_GREEN) . scalar(@mismatch_list) . "\n" . COLOR_RESET);
     foreach (@mismatch_list) {
-        STDOUT->printflush("* " . color('red') . "$_\n" . color('reset'));
+        STDOUT->printflush("* " . COLOR_RED . "$_\n" . COLOR_RESET);
     }
-    STDOUT->printflush("* Filehandle errors: " . (scalar(@fh_errors) ? color('red') : color('green')) . scalar(@fh_errors) . "\n" . color('reset'));
+    STDOUT->printflush("* Filehandle errors: " . (scalar(@fh_errors) ? COLOR_RED : COLOR_GREEN) . scalar(@fh_errors) . "\n" . COLOR_RESET);
     foreach (@fh_errors) {
-        STDOUT->printflush("* " . color('red') . "$_\n" . color('reset'));
+        STDOUT->printflush("* " . COLOR_RED . "$_\n" . COLOR_RESET);
     }
     STDOUT->printflush("***********************************************\n");
 }
