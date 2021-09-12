@@ -24,11 +24,11 @@ use Config;
 my $default_algo = HashUtil::DEFAULT_ALGO;
 
 # Set colors per OS
-use constant COLOR_RED    => ($Config{osname} ne "MSWin32") ? color('red') : '';
-use constant COLOR_BLUE   => ($Config{osname} ne "MSWin32") ? color('blue') : '';
+use constant COLOR_RED    => ($Config{osname} ne "MSWin32") ? color('red')    : '';
+use constant COLOR_BLUE   => ($Config{osname} ne "MSWin32") ? color('blue')   : '';
 use constant COLOR_YELLOW => ($Config{osname} ne "MSWin32") ? color('yellow') : '';
-use constant COLOR_GREEN  => ($Config{osname} ne "MSWin32") ? color('green') : '';
-use constant COLOR_RESET  => ($Config{osname} ne "MSWin32") ? color('reset') : '';
+use constant COLOR_GREEN  => ($Config{osname} ne "MSWin32") ? color('green')  : '';
+use constant COLOR_RESET  => ($Config{osname} ne "MSWin32") ? color('reset')  : '';
 
 #
 # set_default_algo()
@@ -111,7 +111,7 @@ sub walk {
     $find_func = sub {
         # Skip if it's a directory
         if (-d $_) {
-            STDOUT->printflush("Skipping directory $_\n") if $args{verbose};
+            STDOUT->printflush("Skipping directory " . $File::Find::name . "\n") if $args{verbose};
             return;
         }
         
