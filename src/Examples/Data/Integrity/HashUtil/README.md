@@ -3,7 +3,7 @@ In this example, I create an object of the HashUtil Perl module, add testfile.tx
 `ec51ef3d390b54d2d36ffc61722bbf7b4394821e8bd093d85a8caa81d18868d12a500b66cf2fb4aa75be34ec3b3c9b266029fcb92a1a25bb058ec11358f6c44c`
 
 # Linux/Unix-like
-![Example](https://raw.githubusercontent.com/zzApotheosis/Perl-Modules/main/src/Examples/HashUtil/screenshot_linux.png)
+![Example](https://raw.githubusercontent.com/zzApotheosis/Perl-Modules/main/src/Examples/Data/Integrity/HashUtil/screenshot_linux.png)
 
 # Windows
-![Example2](https://raw.githubusercontent.com/zzApotheosis/Perl-Modules/main/src/Examples/HashUtil/screenshot_windows.png)
+![Example2](https://raw.githubusercontent.com/zzApotheosis/Perl-Modules/main/src/Examples/Data/Integrity/HashUtil/screenshot_windows.png)
