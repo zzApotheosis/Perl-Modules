@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use lib "../..";
+use lib "../../../..";
 use Data::Integrity::HashUtil;
 
 unlink("test.json") if -e "test.json";
