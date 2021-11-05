@@ -7,7 +7,7 @@ our $VERSION = "0.2.0-20210510";
 # Constants
 use constant MAX_BUF_SIZE => 1024;
 use constant UNDEFINED_IDENTIFIER => 'undefined_identifier';
-use constant DEFAULT_LOG_FILE     => 'default.log';
+use constant DEFAULT_LOG_FILE     => undef;
 use constant LOG_FILE_ERR   => 0b00001;
 use constant LOG_LEVEL_ERR  => 0b00010;
 use constant FIFO_ERR       => 0b00100;
@@ -238,7 +238,7 @@ sub sigterm_handler {
 #
 # new()
 #
-# This is the constructor for this class. IT accepts named arguments only, or no
+# This is the constructor for this class. It accepts named arguments only, or no
 # arguments at all.
 #
 sub new {
@@ -380,8 +380,8 @@ sub listen {
                 if (!$pid) {
                     openlog($args{identifier}, '', LOG_USER);
                     $server = IO::Socket::UNIX->new(Type => SOCK_STREAM, Local => $self->get_socket(), Listen => 1);
-                    $SIG{TERM} = sub { LogUtil::sigterm_handler(server_ptr => \$server) };
-                    $SIG{INT} = sub { LogUtil::sigterm_handler(server_ptr => \$server) };
+                    $SIG{TERM} = sub { LogUtil::sigterm_handler(server_ptr => \$server, socket => $args{socket}) };
+                    $SIG{INT} = sub { LogUtil::sigterm_handler(server_ptr => \$server, socket => $args{socket}) };
                     if (!defined($server)) {
                         STDERR->printflush((caller(0))[3] . " - Error starting socket listener\n");
                         exit(EXIT_FAILURE);
@@ -421,6 +421,11 @@ sub listen {
             STDERR->printflush((caller(0))[3] . " - Cannot use null characters in socket name. Perl isn't cool like C\n");
             $status |= SOCKET_ERR;
         }
+    }
+
+    # Lastly, if a file is defined, expose an environment variable for child processes to access
+    if (defined($self->get_log_file())) {
+        $ENV{LOGUTIL_FILE} = $self->get_log_file();
     }
 
     # Return listen() status
