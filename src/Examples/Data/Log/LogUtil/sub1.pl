@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use lib "../../..";
+use lib "../../../..";
 use Data::Log::LogUtil;
 
 my $log_client1 = LogUtil->new(socket => $ENV{LOGUTIL_SOCK});

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use FindBin;
-use lib "../../..";
+use lib "../../../..";
 use Data::Log::LogUtil;
 
 my $log_client1 = LogUtil->new(log_file => $ENV{LOGUTIL_FILE});

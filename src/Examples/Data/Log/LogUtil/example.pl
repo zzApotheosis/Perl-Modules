@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FindBin;
 use Cwd;
-use lib "../../..";
+use lib "../../../..";
 use Data::Log::LogUtil;
 
 my $exec_name = "$FindBin::RealScript";
